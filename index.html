@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>La Travesía Secreta ⚡</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Outfit', sans-serif; background: #0f172a; color: white; }
+
+    /* PANTALLA DE CONTRASEÑA */
+    #lock-screen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      display: flex; justify-content: center; align-items: center; z-index: 99999;
+    }
+    .pass-card {
+      background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 35px 25px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      text-align: center; max-width: 320px; width: 85%; backdrop-filter: blur(10px);
+    }
+    .pass-card h2 { font-size: 26px; font-weight: 800; margin: 0 0 8px 0; color: #f43f5e; }
+    .pass-card p { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
+    .pass-card input {
+      width: 100%; padding: 14px; margin-bottom: 15px; border: 2px solid #334155;
+      background: #0f172a; color: white; border-radius: 12px; font-size: 18px; text-align: center; outline: none; transition: 0.2s;
+    }
+    .pass-card input:focus { border-color: #f43f5e; }
+    .pass-card button {
+      background: #f43f5e; color: white; border: none; padding: 14px; font-size: 16px;
+      border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
+      transition: 0.2s;
+    }
+    .pass-card button:active { transform: scale(0.98); }
+    #error-msg { color: #fb7185; font-size: 13px; margin-top: 12px; display: none; font-weight: 600; }
+
+    /* SELECCIÓN DE DIFICULTAD */
+    #difficulty-screen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      display: none; justify-content: center; align-items: center; z-index: 99998;
+    }
+    .diff-card {
+      background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 30px 20px; border-radius: 24px; text-align: center; max-width: 340px; width: 85%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+    }
+    .diff-card h2 { font-size: 26px; font-weight: 900; margin: 0 0 8px 0; color: white; }
+    .diff-card p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+    .diff-btn {
+      width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; text-align: left;
+      display: flex; justify-content: space-between; align-items: center; color: white; transition: 0.2s;
+    }
+    .diff-btn:active { transform: scale(0.98); }
+    .easy { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .normal { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .hard { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
+
+    /* CONTENEDOR DEL JUEGO */
+    #game-container { width: 100vw; height: 100vh; position: relative; display: flex; justify-content: center; align-items: center; }
+    canvas { width: 100%; height: 100%; display: block; }
+
+    /* HUD / PUNTUACIÓN */
+    .hud {
+      position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between;
+      align-items: center; pointer-events: none; z-index: 10;
+    }
+    .score-badge {
+      background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px 18px; border-radius: 20px; backdrop-filter: blur(8px);
+      font-weight: 800; font-size: 16px; color: #fbbf24; display: flex; align-items: center; gap: 8px;
+    }
+    .progress-bar-bg {
+      width: 130px; height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .progress-bar-fill {
+      width: 0%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fbbf24); border-radius: 6px; transition: width 0.2s ease-out;
+    }
+
+    /* MODAL DE VICTORIA */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.88); display: none; justify-content: center; align-items: center;
+      z-index: 1000; backdrop-filter: blur(12px); animation: fadeIn 0.3s ease;
+    }
+    .modal-content {
+      background: #1e293b; border: 1px solid rgba(255,255,255,0.15); padding: 35px 25px;
+      border-radius: 28px; text-align: center; max-width: 340px; width: 85%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .modal-badge {
+      display: inline-block; background: rgba(244, 63, 94, 0.15); color: #f43f5e;
+      font-weight: 800; font-size: 12px; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;
+    }
+    .modal h2 { font-size: 28px; font-weight: 900; color: white; margin: 0 0 14px 0; }
+    .modal p { font-size: 16px; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px; }
+    
+    .close-btn {
+      background: #f43f5e; color: white; border: none; padding: 14px; border-radius: 14px;
+      font-weight: 800; width: 100%; font-size: 16px; cursor: pointer; box-shadow: 0 10px 20px rgba(244, 63, 94, 0.3); transition: 0.2s;
+    }
+    .close-btn:active { transform: scale(0.97); }
+    
+    .instruction-overlay {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.7); padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE CONTRASEÑA -->
+  <div id="lock-screen">
+    <div class="pass-card">
+      <h2>Acceso Secreto ⚡</h2>
+      <p>Ingresa la clave para desbloquear el reto:</p>
+      <input type="password" id="pass-input" placeholder="Clave secreta">
+      <button onclick="unlockGame()">Entrar</button>
+      <div id="error-msg">Clave incorrecta 😜</div>
+    </div>
+  </div>
+
+  <!-- SELECCIÓN DE DIFICULTAD -->
+  <div id="difficulty-screen">
+    <div class="diff-card">
+      <h2>Dificultad ⚡</h2>
+      <p>Elige tu nivel para el reto:</p>
+      <button class="diff-btn easy" onclick="selectDifficulty('easy')">🌱 Principiante <span>2000 pts</span></button>
+      <button class="diff-btn normal" onclick="selectDifficulty('normal')">⚡ Desafío <span>3500 pts</span></button>
+      <button class="diff-btn hard" onclick="selectDifficulty('hard')">🔥 Leyenda <span>5000 pts</span></button>
+    </div>
+  </div>
+
+  <!-- JUEGO -->
+  <div id="game-container">
+    <div class="hud">
+      <div class="score-badge">⚡ <span id="scoreText">0</span> / <span id="maxScoreText">2000</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+    </div>
+    
+    <div class="instruction-overlay">Desliza para moverte 👈👉</div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- MODAL DE VICTORIA -->
+  <div class="modal" id="winModal">
+    <div class="modal-content">
+      <div class="modal-badge">Reto Completado</div>
+      <h2>Demasiado estilo... 🔥</h2>
+      <p>Sabía que ibas a ganar sin despeinarte. Tienes ese don de hacer que todo se vea demasiado fácil e interesante cuando lo haces tú. 😉✨</p>
+      <button class="close-btn" onclick="location.reload()">Jugar de nuevo ✨</button>
+    </div>
+  </div>
+
+  <script>
+    // 🔑 CLAVE SECRETA (Puedes cambiar el "1234"):
+    const CLAVE_CORRECTA = "1234";
+    let selectedDifficulty = 'normal';
+
+    function unlockGame() {
+      const input = document.getElementById('pass-input').value;
+      if (input === CLAVE_CORRECTA) {
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('difficulty-screen').style.display = 'flex';
+      } else {
+        document.getElementById('error-msg').style.display = 'block';
+      }
+    }
+
+    function selectDifficulty(diff) {
+      selectedDifficulty = diff;
+      document.getElementById('difficulty-screen').style.display = 'none';
+      startEngine();
+    }
+
+    function startEngine() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      // Configuración según dificultad
+      let MAX_SCORE = 3500;
+      let baseSpeed = 4;
+      let spawnRate = 20;
+
+      if (selectedDifficulty === 'easy') {
+        MAX_SCORE = 2000;
+        baseSpeed = 3;
+        spawnRate = 25;
+      } else if (selectedDifficulty === 'normal') {
+        MAX_SCORE = 3500;
+        baseSpeed = 4.5;
+        spawnRate = 18;
+      } else if (selectedDifficulty === 'hard') {
+        MAX_SCORE = 5000;
+        baseSpeed = 6;
+        spawnRate = 14;
+      }
+
+      document.getElementById('maxScoreText').innerText = MAX_SCORE;
+
+      // Audio Sintetizado
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function playPickup() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(850, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+      }
+
+      function playDodge() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(380, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.08);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+      }
+
+      // Estado del Jugador
+      let player = {
+        x: width / 2,
+        y: height - 120,
+        targetX: width / 2,
+        radius: 24,
+        tailAngle: 0
+      };
+
+      let score = 0;
+      let won = false;
+
+      let items = [];
+      let particles = [];
+      let floaters = [];
+
+      const handleMove = (e) => {
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        player.targetX = clientX;
+      };
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('touchmove', handleMove);
+
+      function spawnItem() {
+        let isOrb = Math.random() > 0.35;
+        let speedBoost = (score / MAX_SCORE) * 3; 
+        items.push({
+          x: Math.random() * (width - 60) + 30,
+          y: -40,
+          speed: Math.random() * 2 + baseSpeed + speedBoost,
+          isOrb: isOrb,
+          radius: isOrb ? 16 : 20,
+          rotation: 0
+        });
+      }
+
+      let spawnTimer = 0;
+
+      function update() {
+        if (won) return;
+
+        player.x += (player.targetX - player.x) * 0.2;
+        player.x = Math.max(player.radius, Math.min(width - player.radius, player.x));
+        player.tailAngle += 0.15;
+
+        spawnTimer++;
+        if (spawnTimer > spawnRate) {
+          spawnItem();
+          spawnTimer = 0;
+        }
+
+        for (let i = items.length - 1; i >= 0; i--) {
+          let item = items[i];
+          item.y += item.speed;
+          item.rotation += 0.03;
+
+          let dx = item.x - player.x;
+          let dy = item.y - player.y;
+          let dist = Math.hypot(dx, dy);
+
+          if (dist < player.radius + item.radius) {
+            if (item.isOrb) {
+              score += 100;
+              playPickup();
+              addParticles(item.x, item.y, '#fbbf24', 10);
+              addFloatingText(item.x, item.y, '+100 ⚡', '#fbbf24');
+            } else {
+              score += 50;
+              playDodge();
+              addParticles(item.x, item.y, '#f43f5e', 8);
+              addFloatingText(item.x, item.y, '¡Reflejos top! ✨', '#f43f5e');
+            }
+
+            items.splice(i, 1);
+
+            document.getElementById('scoreText').innerText = score;
+            document.getElementById('progressBar').style.width = Math.min((score / MAX_SCORE) * 100, 100) + '%';
+
+            if (score >= MAX_SCORE && !won) {
+              won = true;
+              setTimeout(() => {
+                document.getElementById('winModal').style.display = 'flex';
+              }, 400);
+            }
+            continue;
+          }
+
+          if (item.y > height + 50) items.splice(i, 1);
+        }
+
+        particles.forEach((p, index) => {
+          p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
+          if (p.alpha <= 0) particles.splice(index, 1);
+        });
+
+        floaters.forEach((f, index) => {
+          f.y -= 1.5; f.alpha -= 0.02;
+          if (f.alpha <= 0) floaters.splice(index, 1);
+        });
+      }
+
+      function addParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            color: color, alpha: 1, radius: Math.random() * 4 + 2
+          });
+        }
+      }
+
+      function addFloatingText(x, y, text, color) {
+        floaters.push({ x: x, y: y, text: text, color: color, alpha: 1 });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, width, height);
+
+        particles.forEach(p => {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        });
+
+        items.forEach(item => {
+          ctx.save();
+          ctx.translate(item.x, item.y);
+          ctx.rotate(item.rotation);
+
+          if (item.isOrb) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath(); ctx.arc(0, 0, item.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(-4, -4, 4, 0, Math.PI * 2); ctx.fill();
+          } else {
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(-item.radius, -item.radius, item.radius * 2, item.radius * 2);
+          }
+          ctx.restore();
+        });
+
+        ctx.save();
+        ctx.translate(player.x, player.y);
+
+        ctx.strokeStyle = '#f43f5e'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 15);
+        ctx.quadraticCurveTo(Math.sin(player.tailAngle) * 20, 35, Math.sin(player.tailAngle) * 10, 45);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath(); ctx.moveTo(-18, -10); ctx.lineTo(-10, -28); ctx.lineTo(-2, -18); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(18, -10); ctx.lineTo(10, -28); ctx.lineTo(2, -18); ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(-8, -2, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.arc(-7, -2, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(8, -2, 4, 0.2, Math.PI - 0.2); ctx.stroke();
+
+        ctx.restore();
+
+        floaters.forEach(f => {
+          ctx.save();
+          ctx.globalAlpha = f.alpha;
+          ctx.fillStyle = f.color;
+          ctx.font = '900 16px Outfit, sans-serif';
+          ctx.fillText(f.text, f.x - 20, f.y);
+          ctx.restore();
+        });
+
+        update();
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    }
+  </script>
+</body>
+</html>
